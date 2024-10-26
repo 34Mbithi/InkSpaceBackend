@@ -9,8 +9,8 @@ flask-sqlalchemy = "==2.5.1"
 flask-migrate = "==3.1.0"
 flask-bcrypt = "==0.7.1"
 flask-cors = "==3.0.10"
-flask-restful = "==0.3.9"
 mysql-connector-python = "==8.0.23"
+flask-restful = "*"
 
 [dev-packages]
 
