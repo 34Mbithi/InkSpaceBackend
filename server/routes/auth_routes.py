@@ -7,7 +7,8 @@ from server.extensions import db
 from server.models import User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import jwt
-import datetime
+from datetime import datetime, timedelta
+
 
 
 auth_ns = Namespace('auth', description='Authentication related operations')
@@ -16,7 +17,7 @@ auth_ns = Namespace('auth', description='Authentication related operations')
 def generate_jwt_token(user):
     payload = {
         'user_id': user.id,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)  # Token expires in 1 hour
+        'exp': datetime.datetime.now() + datetime.timedelta(hours=1) 
     }
     token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
     return token
@@ -30,6 +31,7 @@ def login_required(f):
             return make_response(jsonify({'message': 'You need to log in first.'}), 401)
         return f(*args, **kwargs)
     return wrap
+
 
 class Register(Resource):
     def post(self):
@@ -56,13 +58,21 @@ class Register(Resource):
             new_user.set_password(password)  # Hash the password
             db.session.add(new_user)
             db.session.commit()
-            return make_response(jsonify({'message': 'User registered successfully'}), 201)
+
+            # Generate JWT token
+            token = jwt.encode({
+                'user_id': new_user.id,
+                'exp': datetime.now() + timedelta(days=7)  # Token expires in 7 days
+            }, current_app.config['SECRET_KEY'], algorithm='HS256')
+
+            return make_response(jsonify({'message': 'User registered successfully', 'token': token}), 201)
         except IntegrityError:
             db.session.rollback()
             return make_response(jsonify({'message': 'Could not register user due to database error'}), 400)
         except Exception as e:
             current_app.logger.error(f"Error registering user: {e}")
             return make_response(jsonify({'message': 'Internal server error'}), 500)
+
         
 
 class Login(Resource):
