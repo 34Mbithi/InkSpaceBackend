@@ -104,9 +104,9 @@ pyxdg==0.27
 referencing==0.35.1
 reportlab==3.6.8
 requests==2.25.1
-rpds-py==0.20.0
-rsa==4.9
-SecretStorage==3.3.1
+# rpds-py==0.20.0
+# rsa==4.9
+# SecretStorage==3.3.1
 sendgrid==6.11.0
 six==1.16.0
 SQLAlchemy==2.0.29
