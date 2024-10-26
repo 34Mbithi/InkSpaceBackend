@@ -1,0 +1,26 @@
+# Ignore virtual environment
+venv/
+
+# Python-specific ignores
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.pyo
+*.pyd
+
+# Ignore environment variable files
+.env
+.env.*
+
+# Ignore IDE and editor config files
+.vscode/
+.idea/
+
+# Ignore migrations and database files
+migrations/
+*.db
+
+# Ignore logs
+*.log
