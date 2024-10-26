@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_restx import Api
 from flask_migrate import Migrate
+from flask_cors import CORS
 from .config import Config
 from .extensions import db, bcrypt
 from .routes.auth_routes import auth_ns
@@ -15,6 +16,10 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    
+    CORS(app)
+
+    
     # Initialize extensions
     register_extensions(app)
 
