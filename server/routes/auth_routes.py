@@ -36,15 +36,20 @@ class Register(Resource):
         data = request.get_json()
 
         # Validate incoming data
-        if not data or not data.get('username') or not data.get('email') or not data.get('password'):
+        if not data or not all(key in data for key in ('username', 'email', 'password')):
             return make_response(jsonify({'message': 'Username, email, and password are required.'}), 400)
 
         username = data['username']
         email = data['email']
         password = data['password']
 
+        # Check if the username already exists
         if User.query.filter_by(username=username).first():
             return make_response(jsonify({'message': 'Username already exists'}), 400)
+
+        # Check if the email already exists
+        if User.query.filter_by(email=email).first():
+            return make_response(jsonify({'message': 'Email already exists'}), 400)
 
         try:
             new_user = User(username=username, email=email)
@@ -54,10 +59,11 @@ class Register(Resource):
             return make_response(jsonify({'message': 'User registered successfully'}), 201)
         except IntegrityError:
             db.session.rollback()
-            return make_response(jsonify({'message': 'Email already exists'}), 400)
+            return make_response(jsonify({'message': 'Could not register user due to database error'}), 400)
         except Exception as e:
             current_app.logger.error(f"Error registering user: {e}")
             return make_response(jsonify({'message': 'Internal server error'}), 500)
+        
 
 class Login(Resource):
     def post(self):
