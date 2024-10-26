@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__, static_url_path='', static_folder='../client/build', template_folder='../client/build')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'postgresql://inkspace_u80g_user:nRUsqSKrjrL7PDn17GB3imVCGeQNJ18v@dpg-csec9ljtq21c7388me60-a.oregon-postgres.render.com/inkspace_u80g')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'postgresql://postgres.jbjgkmfawiniktahemub:%40Mbithi2019.@aws-0-eu-central-1.pooler.supabase.com:6543/postgres')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.json.compact = False
 
