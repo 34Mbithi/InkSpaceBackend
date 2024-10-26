@@ -1,100 +1,81 @@
-# Standard library imports
-import datetime
-from random import randint, choice as rc
-# Remote library imports
-from config import app, db
+from config import db, app
 from models import User, BlogPost, Category, Comment
-from faker import Faker
+from werkzeug.security import generate_password_hash
 
-# Initialize Faker instance
-fake = Faker()
-
-# Function to seed the database
 def seed_data():
-    with app.app_context():
-        print("Starting seed...")
-        # Delete all rows in tables
-        Comment.query.delete()
-        BlogPost.query.delete()
-        User.query.delete()
-        Category.query.delete()
-        db.session.commit()
+    # Create multiple users
+    users = [
+        User(username='john_doe', email='john@example.com'),
+        User(username='jane_smith', email='jane@example.com'),
+        User(username='alice_jones', email='alice@example.com'),
+        User(username='bob_brown', email='bob@example.com'),
+    ]
 
-        # Drop and recreate all tables
-        db.drop_all()
-        db.create_all()
+    # Set passwords using the property setter
+    users[0].password = 'password123'
+    users[1].password = 'password456'
+    users[2].password = 'password789'
+    users[3].password = 'securepass'
 
-        # Add categories
-        CATEGORIES = ["Technology", "Science", "Art", "Travel", "Health"]
-        categories = [Category(name=category) for category in CATEGORIES]
-        db.session.add_all(categories)
-        db.session.commit()
+    db.session.bulk_save_objects(users)  # Use bulk_save_objects for efficiency
 
-        # Seed Users
-        users = seed_users(num_users=10)  # Create 10 users
-        # Seed Blog Posts
-        posts = seed_blog_posts(users, categories, num_posts=20)  # Create 20 blog posts
-        # Seed Comments
-        seed_comments(users, posts, num_comments=50)  # Create 50 comments
-
-        print("Database seeded successfully!")
-
-def seed_users(num_users=5):
-    users = []
-    for _ in range(num_users):
-        user = User(
-            username=fake.user_name(),
-            email=fake.email(),
-            _password_hash='password123'  # You can add password hashing here if needed
-        )
-        users.append(user)
-    db.session.add_all(users)
+    # Commit users to the database
     db.session.commit()
-    return users
 
-def seed_categories():
-    categories = ['Technology', 'Lifestyle', 'Travel', 'Food', 'Education']
-    category_objs = []
-    for name in categories:
-        category = Category(name=name)
-        category_objs.append(category)
-        db.session.add(category)
-    db.session.commit()
-    return category_objs
+    # Create multiple categories
+    categories = [
+        Category(name='Technology'),
+        Category(name='Lifestyle'),
+        Category(name='Health'),
+        Category(name='Travel'),
+        Category(name='Food'),
+    ]
 
-def seed_blog_posts(users, categories, num_posts=10):
-    posts = []
-    for _ in range(num_posts):
-        post = BlogPost(
-            title=fake.sentence(nb_words=6),
-            content=fake.text(max_nb_chars=200),
-            user_id=rc(users).id,
-            created_at=datetime.datetime.utcnow()  # Corrected reference
-        )
-        # Assign random categories to the post
-        categories_to_assign = set()
-        while len(categories_to_assign) < randint(1, 5):
-            category = rc(categories)
-            categories_to_assign.add(category)
-        
-        post.categories = list(categories_to_assign)  # Assign categories to the post
-        posts.append(post)
-    db.session.add_all(posts)
-    db.session.commit()
-    return posts
+    db.session.bulk_save_objects(categories)  # Bulk save for categories
 
-def seed_comments(users, posts, num_comments=20):
-    comments = []
-    for _ in range(num_comments):
-        comment = Comment(
-            content=fake.sentence(nb_words=10),
-            post_id=rc(posts).id,
-            user_id=rc(users).id,
-            created_at=datetime.datetime.utcnow()  # Corrected reference
-        )
-        comments.append(comment)
-    db.session.add_all(comments)
+    # Commit categories to the database
     db.session.commit()
+
+    # Create multiple blog posts
+    posts = [
+        BlogPost(title='Latest Trends in Technology', content='Content about tech trends...', user_id=1),
+        BlogPost(title='Healthy Living Tips', content='Content about health tips...', user_id=2),
+        BlogPost(title='Traveling the World on a Budget', content='Content about budget travel...', user_id=3),
+        BlogPost(title='Delicious Vegan Recipes', content='Content about vegan food...', user_id=4),
+        BlogPost(title='Work-Life Balance', content='Content about balancing work and life...', user_id=1),
+    ]
+
+    db.session.bulk_save_objects(posts)  # Bulk save for posts
+
+    # Commit posts to the database
+    db.session.commit()
+
+    # Assign categories to posts
+    posts[0].categories.append(categories[0])  # Technology post
+    posts[1].categories.append(categories[2])  # Health post
+    posts[2].categories.append(categories[3])  # Travel post
+    posts[3].categories.append(categories[4])  # Food post
+    posts[4].categories.append(categories[1])  # Lifestyle post
+
+    # Commit category assignments
+    db.session.commit()
+
+    # Create multiple comments
+    comments = [
+        Comment(content='Great post! Very informative.', user_id=2, post_id=1),
+        Comment(content='Thanks for the tips!', user_id=1, post_id=2),
+        Comment(content='I loved the vegan recipes!', user_id=3, post_id=4),
+        Comment(content='Traveling on a budget is crucial!', user_id=4, post_id=3),
+        Comment(content='Work-life balance is so important!', user_id=1, post_id=5),
+    ]
+
+    db.session.bulk_save_objects(comments)  # Bulk save for comments
+
+    # Commit comments to the database
+    db.session.commit()
+
+    print("Database seeded successfully!")
 
 if __name__ == '__main__':
-    seed_data()
+    with app.app_context():
+        seed_data()

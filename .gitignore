@@ -1,4 +1,4 @@
-# Ignore virtual environment
+# Ignore virtual environment (if created by pipenv or otherwise)
 venv/
 
 # Python-specific ignores
