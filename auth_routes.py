@@ -1,9 +1,10 @@
-from flask import Blueprint, request, session, jsonify, make_response
+from flask import Blueprint, request, session, jsonify, make_response, current_app
 from werkzeug.security import check_password_hash
 from sqlalchemy.exc import IntegrityError
 from config import db
 from models import User
 from functools import wraps
+import logging
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -36,6 +37,8 @@ def register():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
+    
+    current_app.logger.info("Login route hit with request: %s", request.get_json())
     data = request.get_json()
     email, password = data.get('email'), data.get('password')
     
