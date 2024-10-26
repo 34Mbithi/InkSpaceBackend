@@ -17,9 +17,9 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
     
-    CORS(app)
+    CORS(app, resources={r"*": {"origins": "*"}})
 
-    
+
     # Initialize extensions
     register_extensions(app)
 
