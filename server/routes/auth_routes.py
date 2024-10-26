@@ -17,7 +17,7 @@ auth_ns = Namespace('auth', description='Authentication related operations')
 def generate_jwt_token(user):
     payload = {
         'user_id': user.id,
-        'exp': datetime.datetime.now() + datetime.timedelta(hours=1) 
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1) 
     }
     token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
     return token
@@ -77,21 +77,20 @@ class Register(Resource):
 
 class Login(Resource):
     def post(self):
-        current_app.logger.info("Login route hit with request: %s", request.get_json())
         data = request.get_json()
 
         # Validate incoming data
         if not data or not data.get('email') or not data.get('password'):
             return make_response(jsonify({'message': 'Email and password are required.'}), 400)
 
-        email, password = data['email'], data['password']
-        
-        user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password): 
-            
-            token = generate_jwt_token(user)  
+        email = data['email']
+        password = data['password']
 
-            return make_response(jsonify({'message': 'Login successful', 'token': token}), 200)
+        user = User.query.filter_by(email=email).first()
+
+        if user and user.check_password(password):
+            token = generate_jwt_token(user)
+            return make_response(jsonify({'token': token}), 200)
         else:
             return make_response(jsonify({'message': 'Invalid email or password'}), 401)
 
