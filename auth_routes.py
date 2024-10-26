@@ -1,6 +1,5 @@
-# auth.py
 from flask import Blueprint, request, session, jsonify, make_response
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash
 from sqlalchemy.exc import IntegrityError
 from config import db
 from models import User
@@ -24,11 +23,12 @@ def register():
     if User.query.filter_by(email=email).first():
         return make_response(jsonify({"message": "User already exists"}), 400)
 
-    new_user = User(username=username, email=email, password_hash=generate_password_hash(password))
+    new_user = User(username=username, email=email)  
+    new_user.password_hash = password  
     try:
         db.session.add(new_user)
         db.session.commit()
-        session['user_id'] = new_user.id
+        session['user_id'] = new_user.id  # Set session variable after user creation
         return make_response(jsonify({"message": "User created successfully", "token": "your_token_here"}), 201)
     except IntegrityError:
         db.session.rollback()
@@ -40,7 +40,7 @@ def login():
     email, password = data.get('email'), data.get('password')
     
     user = User.query.filter_by(email=email).first()
-    if user and check_password_hash(user.password_hash, password):
+    if user and user.authenticate(password):
         session['user_id'] = user.id
         return jsonify(user.to_dict()), 200
     
