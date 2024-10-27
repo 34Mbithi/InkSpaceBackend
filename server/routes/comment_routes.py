@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from server.models import Comment, db
+from server.models import Comment, db, User
 from flask_restx import Namespace, Resource
 
 comments_ns = Namespace('comments', description='Comment-related operations')
@@ -8,7 +8,14 @@ class CommentList(Resource):
     def get(self, post_id):
         """Retrieve all comments for a specific post."""
         comments = Comment.query.filter_by(post_id=post_id).all()
-        return jsonify([comment.to_dict() for comment in comments])
+        comment_data = []
+        for comment in comments:
+            # Fetch author info if author_id is not null
+            author = User.query.get(comment.author_id) if comment.author_id else None
+            comment_dict = comment.to_dict()
+            comment_dict["author"] = {"username": author.username} if author else None
+            comment_data.append(comment_dict)
+        return jsonify(comment_data)
 
     def post(self, post_id):
         """Create a new comment for a specific post."""

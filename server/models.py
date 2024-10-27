@@ -136,6 +136,7 @@ class Comment(db.Model):
             'created_at': self.created_at.isoformat(),
             'post_id': self.post_id,
             'author_id': self.author_id,  # Include author_id if needed
+            'author':{"username":self.author.username} if self.author else None
         }
         if include_post:
             data['post'] = self.post.to_dict()
