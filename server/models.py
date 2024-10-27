@@ -117,9 +117,11 @@ class Comment(db.Model):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     post_id = Column(Integer, ForeignKey('blog_posts.id', ondelete="CASCADE"))
+    author_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"))
 
-    # Relationship to BlogPost
+    # Relationships
     post = relationship('BlogPost', back_populates='comments')
+    author = relationship('User')  # Add a relationship to User if desired
 
     @validates('content')
     def validate_content(self, key, content):
@@ -127,13 +129,16 @@ class Comment(db.Model):
             raise ValueError("Comment content must not be empty")
         return content
 
-    def to_dict(self, include_post=False):
+    def to_dict(self, include_post=False, include_author=False):
         data = {
             'id': self.id,
             'content': self.content,
-            'created_at': self.created_at.isoformat(),  # Convert datetime to ISO format
+            'created_at': self.created_at.isoformat(),
             'post_id': self.post_id,
+            'author_id': self.author_id,  # Include author_id if needed
         }
         if include_post:
             data['post'] = self.post.to_dict()
+        if include_author and self.author:
+            data['author'] = self.author.to_dict()
         return data
