@@ -7,7 +7,6 @@ from server.models import BlogPost, Category
 posts_ns = Namespace('posts', description='Post related operations')
 
 class PostList(Resource):
-    @jwt_required()
     def get(self):
         """Fetch all blog posts with optional pagination."""
         page = request.args.get('page', 1, type=int)
