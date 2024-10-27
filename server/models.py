@@ -42,14 +42,16 @@ class User(db.Model):
         assert '@' in email, "Provided email is invalid"
         return email
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_posts=False):
+        data = {
             'id': self.id,
             'username': self.username,
             'email': self.email,
             'created_at': self.created_at.isoformat(),  # Convert datetime to ISO format
-            'posts': [post.to_dict() for post in self.posts]  # Serialize related posts
         }
+        if include_posts:
+            data['posts'] = [post.to_dict() for post in self.posts]  # Serialize related posts
+        return data
 
 class BlogPost(db.Model):
     __tablename__ = 'blog_posts'
@@ -74,16 +76,21 @@ class BlogPost(db.Model):
         assert content, "Content must not be empty"
         return content
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_author=True, include_categories=False, include_comments=False):
+        data = {
             'id': self.id,
             'title': self.title,
             'content': self.content,
             'created_at': self.created_at.isoformat(),  # Convert datetime to ISO format
             'author_id': self.author_id,
-            'categories': [category.name for category in self.categories],  # Serialize categories
-            'comments': [comment.to_dict() for comment in self.comments]  # Serialize comments
         }
+        if include_author and self.author:
+            data['author'] = {'id': self.author.id, 'username': self.author.username}
+        if include_categories:
+            data['categories'] = [category.to_dict() for category in self.categories]
+        if include_comments:
+            data['comments'] = [comment.to_dict() for comment in self.comments]
+        return data
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -98,12 +105,14 @@ class Category(db.Model):
         assert name, "Category name must not be empty"
         return name
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_posts=False):
+        data = {
             'id': self.id,
             'name': self.name,
-            'posts': [post.to_dict() for post in self.posts]  # Serialize related posts
         }
+        if include_posts:
+            data['posts'] = [post.to_dict() for post in self.posts]  # Serialize related posts
+        return data
 
 class Comment(db.Model):
     __tablename__ = 'comments'
@@ -120,10 +129,13 @@ class Comment(db.Model):
         assert content, "Comment content must not be empty"
         return content
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_post=False):
+        data = {
             'id': self.id,
             'content': self.content,
             'created_at': self.created_at.isoformat(),  # Convert datetime to ISO format
-            'post_id': self.post_id
+            'post_id': self.post_id,
         }
+        if include_post:
+            data['post'] = self.post.to_dict()
+        return data

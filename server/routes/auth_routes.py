@@ -1,43 +1,17 @@
-# auth.py
 from flask_restx import Namespace, Resource
-from flask import request, session, jsonify, make_response, current_app
+from flask import request, jsonify, make_response, current_app
 from werkzeug.security import check_password_hash
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from server.extensions import db
 from server.models import User
-from flask_jwt_extended import jwt_required, get_jwt_identity
-import jwt
-from datetime import datetime, timedelta
-
-
+from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
+from datetime import timedelta
 
 auth_ns = Namespace('auth', description='Authentication related operations')
-
-
-def generate_jwt_token(user):
-    payload = {
-        'user_id': user.id,
-        'exp': datetime.utcnow() + timedelta(hours=1)  
-    }
-    token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
-    return token
-
-def login_required(f):
-    from functools import wraps
-
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'user_id' not in session:
-            return make_response(jsonify({'message': 'You need to log in first.'}), 401)
-        return f(*args, **kwargs)
-    return wrap
-
 
 class Register(Resource):
     def post(self):
         data = request.get_json()
-
-        # Validate incoming data
         if not data or not all(key in data for key in ('username', 'email', 'password')):
             return make_response(jsonify({'message': 'Username, email, and password are required.'}), 400)
 
@@ -45,41 +19,30 @@ class Register(Resource):
         email = data['email']
         password = data['password']
 
-        # Check if the username already exists
-        if User.query.filter_by(username=username).first():
-            return make_response(jsonify({'message': 'Username already exists'}), 400)
-
-        # Check if the email already exists
-        if User.query.filter_by(email=email).first():
-            return make_response(jsonify({'message': 'Email already exists'}), 400)
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+            current_app.logger.warning("Attempted registration with existing username/email.")
+            return make_response(jsonify({'message': 'Username or Email already exists'}), 400)
 
         try:
             new_user = User(username=username, email=email)
-            new_user.set_password(password)  # Hash the password
+            new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
 
-            # Generate JWT token
-            token = jwt.encode({
-                'user_id': new_user.id,
-                'exp': datetime.now() + timedelta(days=7)  # Token expires in 7 days
-            }, current_app.config['SECRET_KEY'], algorithm='HS256')
-
+            token = create_access_token(identity=new_user.id, expires_delta=timedelta(hours=1))
+            current_app.logger.info(f"User {username} registered successfully with ID {new_user.id}")
             return make_response(jsonify({'message': 'User registered successfully', 'token': token}), 201)
         except IntegrityError:
             db.session.rollback()
+            current_app.logger.error("Integrity error during user registration.")
             return make_response(jsonify({'message': 'Could not register user due to database error'}), 400)
         except Exception as e:
-            current_app.logger.error(f"Error registering user: {e}")
+            current_app.logger.error(f"Unexpected error registering user: {e}")
             return make_response(jsonify({'message': 'Internal server error'}), 500)
-
-        
 
 class Login(Resource):
     def post(self):
         data = request.get_json()
-
-        # Validate incoming data
         if not data or not data.get('email') or not data.get('password'):
             return make_response(jsonify({'message': 'Email and password are required.'}), 400)
 
@@ -89,23 +52,28 @@ class Login(Resource):
         user = User.query.filter_by(email=email).first()
 
         if user and user.check_password(password):
-            token = generate_jwt_token(user)
-            return make_response(jsonify({'token': token}), 200)
+            token = create_access_token(identity=user.id, expires_delta=timedelta(hours=1))
+            current_app.logger.info(f"User {user.id} logged in successfully.")
+            return make_response(jsonify({'message': 'Logged in successfully', 'token': token}), 200)
         else:
+            current_app.logger.warning("Failed login attempt.")
             return make_response(jsonify({'message': 'Invalid email or password'}), 401)
 
-
 class Logout(Resource):
-    @login_required
+    @jwt_required()
     def delete(self):
-        session.pop('user_id', None)
+        
+        current_user_id = get_jwt_identity()
+        current_app.logger.info(f"User {current_user_id} logged out successfully.")
+        
         return make_response(jsonify({"message": "Logged out successfully"}), 204)
+
 
 class DeleteUser(Resource):
     @jwt_required()
     def delete(self, user_id):
-        current_user_public_id = get_jwt_identity()
-        current_user = User.query.filter_by(public_id=current_user_public_id).first()
+        current_user_id = get_jwt_identity()
+        current_user = User.query.get(current_user_id)
 
         if not current_user:
             return {'message': 'User not found'}, 404
@@ -115,6 +83,7 @@ class DeleteUser(Resource):
         if not user_to_delete:
             return {'message': 'User not found'}, 404
 
+        # Authorization check
         if user_to_delete.id != current_user.id and not current_user.is_admin:
             return {'message': 'Unauthorized action'}, 403
 
