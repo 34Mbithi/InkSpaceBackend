@@ -69,11 +69,16 @@ class SinglePost(Resource):
         post.title = data.get('title', post.title)
         post.content = data.get('content', post.content)
 
-        # Handle categories
+        # Ensure categories are in list format
         category_names = data.get('categories', [])
+        if isinstance(category_names, str):
+            category_names = category_names.split(",")  # Split comma-separated string into a list
+
+        # Clear and update categories
         post.categories.clear()
 
         for name in category_names:
+            name = name.strip()  # Remove any whitespace around category names
             category = Category.query.filter_by(name=name).first()
             if not category:
                 category = Category(name=name)
@@ -82,7 +87,7 @@ class SinglePost(Resource):
 
         db.session.commit()
         current_app.logger.info(f"Post {post_id} updated by user {user_id}")
-        return jsonify(post.to_dict(include_author=True, include_categories=True))
+        return jsonify(post.to_dict(include_author=True, include_categories=True)) 
 
     @jwt_required()
     def delete(self, post_id):
