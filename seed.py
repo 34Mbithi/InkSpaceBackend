@@ -1,60 +1,61 @@
+# seed.py
+from datetime import datetime
+from werkzeug.security import generate_password_hash
 from server import create_app
 from server.extensions import db
 from server.models import User, BlogPost, Category, Comment
-from datetime import datetime
 
 app = create_app()
-with app.app_context():
-    # Drop existing tables and create new ones
-    db.drop_all()
-    db.create_all()
 
-    # Seed Users
-    users = [
-        User(username='alice', email='alice@example.com', password_hash='hashed_password_1'),
-        User(username='bob', email='bob@example.com', password_hash='hashed_password_2'),
-        User(username='charlie', email='charlie@example.com', password_hash='hashed_password_3'),
-        User(username='dave', email='dave@example.com', password_hash='hashed_password_4'),
-        User(username='eve', email='eve@example.com', password_hash='hashed_password_5'),
-    ]
-    
-    db.session.bulk_save_objects(users)
-    db.session.commit()
+def seed_data():
+    with app.app_context():
+        # Drop and recreate tables
+        db.drop_all()
+        db.create_all()
 
-    # Seed Categories
-    categories = [
-        Category(name='Technology'),
-        Category(name='Health'),
-        Category(name='Travel'),
-        Category(name='Education'),
-        Category(name='Lifestyle'),
-    ]
-    
-    db.session.bulk_save_objects(categories)
-    db.session.commit()
+        # Seed Users
+        users = [
+            User(username="john_doe", email="john@example.com", password_hash=generate_password_hash("password1")),
+            User(username="jane_smith", email="jane@example.com", password_hash=generate_password_hash("password2")),
+            User(username="michael_lee", email="michael@example.com", password_hash=generate_password_hash("password3"))
+        ]
+        db.session.add_all(users)
+        db.session.commit()
 
-    # Seed Blog Posts
-    posts = [
-        BlogPost(title='The Future of Tech', content='Discussion about AI and ML.', author_id=1, created_at=datetime.utcnow()),
-        BlogPost(title='Healthy Living Tips', content='Tips on maintaining a healthy lifestyle.', author_id=2, created_at=datetime.utcnow()),
-        BlogPost(title='Top 10 Travel Destinations', content='A guide to the best places to visit.', author_id=3, created_at=datetime.utcnow()),
-        BlogPost(title='Learning Python', content='A beginner\'s guide to programming.', author_id=4, created_at=datetime.utcnow()),
-        BlogPost(title='Work-Life Balance', content='How to achieve balance in life.', author_id=5, created_at=datetime.utcnow()),
-    ]
-    
-    db.session.bulk_save_objects(posts)
-    db.session.commit()
+        # Seed Categories
+        categories = [
+            Category(name="Technology"),
+            Category(name="Lifestyle"),
+            Category(name="Education")
+        ]
+        db.session.add_all(categories)
+        db.session.commit()
 
-    # Seed Comments
-    comments = [
-        Comment(content='Great insights!', post_id=1),
-        Comment(content='Very informative, thank you!', post_id=2),
-        Comment(content='Loved the suggestions!', post_id=3),
-        Comment(content='Looking forward to applying these tips.', post_id=4),
-        Comment(content='This helped me a lot, thanks!', post_id=5),
-    ]
-    
-    db.session.bulk_save_objects(comments)
-    db.session.commit()
+        # Seed BlogPosts
+        blog_posts = [
+            BlogPost(title="The Future of AI", content="Exploring the impact of AI on society.", author_id=users[0].id, created_at=datetime.now()),
+            BlogPost(title="Healthy Living Tips", content="How to maintain a balanced lifestyle.", author_id=users[1].id, created_at=datetime.now()),
+            BlogPost(title="Learning Python", content="An introduction to Python programming.", author_id=users[2].id, created_at=datetime.now())
+        ]
+        db.session.add_all(blog_posts)
+        db.session.commit()
 
-    print("Database seeded!")
+        # Link Categories to BlogPosts
+        blog_posts[0].categories.append(categories[0])  # AI -> Technology
+        blog_posts[1].categories.append(categories[1])  # Healthy Living -> Lifestyle
+        blog_posts[2].categories.append(categories[2])  # Python -> Education
+        db.session.commit()
+
+        # Seed Comments
+        comments = [
+            Comment(content="Great article on AI!", post_id=blog_posts[0].id, created_at=datetime.now()),
+            Comment(content="Thanks for the tips!", post_id=blog_posts[1].id, created_at=datetime.now()),
+            Comment(content="Very helpful post on Python.", post_id=blog_posts[2].id, created_at=datetime.now())
+        ]
+        db.session.add_all(comments)
+        db.session.commit()
+
+        print("Database seeded successfully!")
+
+if __name__ == "__main__":
+    seed_data()

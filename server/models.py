@@ -34,12 +34,14 @@ class User(db.Model):
     # Validations for username and email
     @validates('username')
     def validate_username(self, key, username):
-        assert username, "Username must not be empty"
+        if not username or username.strip() == "":
+            raise ValueError("Username must not be empty")
         return username
 
     @validates('email')
     def validate_email(self, key, email):
-        assert '@' in email, "Provided email is invalid"
+        if '@' not in email:
+            raise ValueError("Provided email is invalid")
         return email
 
     def to_dict(self, include_posts=False):
@@ -66,17 +68,7 @@ class BlogPost(db.Model):
     categories = relationship('Category', secondary=post_category, back_populates='posts')
     comments = relationship('Comment', back_populates='post', cascade="all, delete")
 
-    @validates('title')
-    def validate_title(self, key, title):
-        assert title, "Title must not be empty"
-        return title
-
-    @validates('content')
-    def validate_content(self, key, content):
-        assert content, "Content must not be empty"
-        return content
-
-    def to_dict(self, include_author=True, include_categories=False, include_comments=False):
+    def to_dict(self, include_author=True, include_categories=True, include_comments=False):
         data = {
             'id': self.id,
             'title': self.title,
@@ -85,12 +77,16 @@ class BlogPost(db.Model):
             'author_id': self.author_id,
         }
         if include_author and self.author:
-            data['author'] = {'id': self.author.id, 'username': self.author.username}
+            data['author'] = {
+                'id': self.author.id,
+                'username': self.author.username,
+            }
         if include_categories:
             data['categories'] = [category.to_dict() for category in self.categories]
         if include_comments:
             data['comments'] = [comment.to_dict() for comment in self.comments]
         return data
+
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -102,7 +98,8 @@ class Category(db.Model):
 
     @validates('name')
     def validate_name(self, key, name):
-        assert name, "Category name must not be empty"
+        if not name or name.strip() == "":
+            raise ValueError("Category name must not be empty")
         return name
 
     def to_dict(self, include_posts=False):
@@ -111,7 +108,7 @@ class Category(db.Model):
             'name': self.name,
         }
         if include_posts:
-            data['posts'] = [post.to_dict() for post in self.posts]  # Serialize related posts
+            data['posts'] = [post.to_dict() for post in self.posts] 
         return data
 
 class Comment(db.Model):
@@ -126,7 +123,8 @@ class Comment(db.Model):
 
     @validates('content')
     def validate_content(self, key, content):
-        assert content, "Comment content must not be empty"
+        if not content or content.strip() == "":
+            raise ValueError("Comment content must not be empty")
         return content
 
     def to_dict(self, include_post=False):
