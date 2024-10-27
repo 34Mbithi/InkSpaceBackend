@@ -14,14 +14,15 @@ class CommentList(Resource):
         """Create a new comment for a specific post."""
         data = request.get_json()
         content = data.get("content")
-        
+        author_id = data.get("author_id") 
+
         if not content:
             return {"message": "Content is required"}, 400
-        
-        new_comment = Comment(content=content, post_id=post_id)
+
+        new_comment = Comment(content=content, post_id=post_id, author_id=author_id) 
         db.session.add(new_comment)
         db.session.commit()
-        
+
         return new_comment.to_dict(), 201
 
 class CommentItem(Resource):
