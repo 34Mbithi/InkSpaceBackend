@@ -49,7 +49,6 @@ class PostList(Resource):
         return make_response(jsonify(post.to_dict(include_author=True, include_categories=True)), 201)
 
 class SinglePost(Resource):
-    @jwt_required()
     def get(self, post_id):
         """Fetch a single blog post by ID."""
         post = BlogPost.query.get_or_404(post_id)
