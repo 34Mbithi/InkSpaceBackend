@@ -19,7 +19,7 @@ def create_app(config_class=Config):
 
     
     # Set CORS to allow specific origin and credentials
-    CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+    CORS(app, resources={r"/*": {"origins": "https://inkspacefrontend.onrender.com"}}, supports_credentials=True)
 
     @app.after_request
     def after_request(response):
